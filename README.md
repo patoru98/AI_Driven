@@ -9,7 +9,7 @@ AI駆動開発のハンズオン学習を行うために作成したリポジト
 ### back_end
 SpringBoot
 APIの管理を行う
-使用するDBは検討中(CSVファイルで管理するかも)
+使用するDBはH2DBをファイルモードで運用
 
 ### front_end
 React+Typescript
