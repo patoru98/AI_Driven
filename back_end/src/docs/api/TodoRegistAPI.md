@@ -26,21 +26,27 @@
 | limit_date | String | タスク終了日 |
 | memo | String | 備考 |
 
-### HTTPレスポンスコード
-| コード値 | 名称 | 説明 |
-| -- | -- | -- |
-| 200 | OK | リクエスト成功 |
-| 300 | NG | 入力チェックエラー |
-| 301 | NG | DB関連エラー |
-| 200以外 | NG | 何かしらのエラーで失敗 |
+### レスポンスコード
+業務コード(300/301)はHTTP標準ではリダイレクトを意味するため、HTTPステータスには標準的なコードを設定し、業務コードはレスポンスボディの`code`で返却する。
+
+| 業務コード値 | HTTPステータス | 名称 | 説明 |
+| -- | -- | -- | -- |
+| 200 | 200 | OK | リクエスト成功 |
+| 300 | 400 | NG | 入力チェックエラー |
+| 301 | 500 | NG | DB関連エラー |
+| - | 200以外 | NG | 何かしらのエラーで失敗 |
 
 ### アウトプットパラメータ
 | json key | 型 | 説明 |
 | -- | -- | -- |
-| task | String | todoを格納 |
-| registed_date | String | タスク開始日 |
-| limit_date | String | タスク終了日 |
-| memo | String | 備考 |
+| code | Number | 業務コード(200/300/301) |
+| task | String | todoを格納 (成功時のみ) |
+| registed_date | String | タスク開始日 (成功時のみ) |
+| limit_date | String | タスク終了日 (成功時のみ) |
+| memo | String | 備考 (成功時のみ) |
+| messages | Array\<String\> | エラー内容 (エラー時のみ) |
+
+※値が存在しない項目はレスポンスに含めない。
 
 ## 入力チェック
 <table>
@@ -90,6 +96,12 @@
 			<td>memo</td>
 			<td>-</td>
 		</tr>
+    <tr>
+			<td>必須チェック</td>
+			<td>値が設定されていること</td>
+			<td>task</td>
+      <td>TODO_TABLE.TASKがNOT NULLのため</td>
+		</tr>
 	</tbody>
 </table>
 
@@ -99,13 +111,13 @@ graph TD;
 START(START) --> A
 A{入力チェックに反しているか？}
 A -- TRUE --> C
-C[HTTPレスポンスに300を設定] --> RETURN
+C[HTTPステータスに400、codeに300を設定] --> RETURN
 A -- FALSE --> B
 B[DBへtodoを登録] --> D
 
 D{DB操作時に異常があったか}
 D -- TRUE --> F
-F[HTTPレスポンスに301を設定] --> RETURN
+F[HTTPステータスに500、codeに301を設定] --> RETURN
 D -- FALSE -->G
 G[DB二登録したレコードをレスポンスへ設定] --> RETURN
 RETURN[retun] --> END
