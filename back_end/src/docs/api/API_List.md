@@ -5,4 +5,5 @@ APIの詳細な仕様については各リンク先に記載しています
 
 | API名 | API概要 |
 | -- | -- |
-| [Hello World](/back_end/src/docs/HelloWorldAPI.md) | Hello World!を返す |
+| [Hello World](/back_end/src/docs/api/HelloWorldAPI.md) | Hello World!を返す |
+| [Todo Regist](/back_end/src/docs/api/TodoRegistAPI.md) | TODOを登録する |
