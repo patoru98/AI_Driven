@@ -51,21 +51,21 @@
 ## 入力チェック
 <table>
 	<tbody>
-    <tr>
+    	<tr>
 			<th>カテゴリ</th>
 			<th>チェック内容</th>
-      <th>対象項目</th>
-      <th>備考</th>
+      		<th>対象項目</th>
+      		<th>備考</th>
 		</tr>
 		<tr>
 			<td rowspan="4">型チェック</td>
 			<td rowspan="4">文字列であること</td>
 			<td>task</td>
-      <td>-<td>
+      		<td>-<td>
 		</tr>
 		<tr>
 			<td>registed_date</td>
-      <td>-</td>
+      		<td>-</td>
 		</tr>
 		<tr>
 			<td>limit_date</td>
@@ -75,35 +75,46 @@
 			<td>memo</td>
 			<td>-</td>
 		</tr>
-    <tr>
-      <td rowspan="2">フォーマットチェック</td>
-      <td  rowspan="2">YYYY/MM/DDとなっていること</td>
-      <td>registed_date</td>
-      <td>-</td>
-    </tr>
-    <tr>
+		<tr>
+			<td rowspan="2">フォーマットチェック</td>
+			<td  rowspan="2">YYYY/MM/DDとなっていること</td>
+			<td>registed_date</td>
+			<td>-</td>
+		</tr>
+		<tr>
 			<td>limit_date</td>
 			<td>-</td>
 		</tr>
-    <tr>
+		<tr>
 			<td rowspan="2">桁数チェック</td>
 			<td>100文字以内であること</td>
 			<td>task</td>
-      <td>-<td>
+      		<td>-<td>
 		</tr>
-    <tr>
-      <td>500文字以内であること</td>
+    	<tr>
+      		<td>500文字以内であること</td>
 			<td>memo</td>
 			<td>-</td>
 		</tr>
-    <tr>
+    	<tr>
 			<td>必須チェック</td>
 			<td>値が設定されていること</td>
 			<td>task</td>
-      <td>TODO_TABLE.TASKがNOT NULLのため</td>
+      		<td>TODO_TABLE.TASKがNOT NULLのため</td>
 		</tr>
 	</tbody>
 </table>
+
+## DBアクセス
+- 対象テーブル：TODO_TABLE
+
+| 登録対象カラム | 登録内容 |
+| -- | -- |
+| TASK | input.task |
+| REGISTED_DATE | input.registed_date |
+| LIMIT_DATE | input.limit_date |
+| MEMO | input.memo |
+| DONE_FLAG | false(初回登録のため固定値) |
 
 ## フローチャート
 ```mermaid
