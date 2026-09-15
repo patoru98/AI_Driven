@@ -30,6 +30,9 @@ public class TodoEntity {
 	@Column(name = "MEMO", length = 500)
 	private String memo;
 
+	@Column(name = "DONE_FLAG", nullable = false)
+	private Boolean doneFlag;
+
 	@Column(name = "CREATE_DATE", nullable = false)
 	private LocalDate createDate;
 
@@ -74,6 +77,14 @@ public class TodoEntity {
 
 	public void setMemo(String memo) {
 		this.memo = memo;
+	}
+
+	public Boolean getDoneFlag() {
+		return doneFlag;
+	}
+
+	public void setDoneFlag(Boolean doneFlag) {
+		this.doneFlag = doneFlag;
 	}
 
 	public LocalDate getCreateDate() {
