@@ -124,17 +124,50 @@ TODOの管理を行う画面
 </html>
 
 ## 画面イベント一覧
+API設計書へのリンクが存在しない場合はモックで動作したこととする
 | イベント名 | タイミング | イベント概要 |
 | -- | -- | -- |
 | 初回読み込み | 画面アクセス時 | todo取得API実行 |
-| todo登録 | 登録ボタン押下時 | todo登録API実行 |
+| todo登録 | 登録ボタン押下時 | [TODO登録API](/back_end/src/docs/api/TodoRegistAPI.md)実行 |
 | todo編集 | 編集ボタン押下時 | タスク、期日、備考を編集可能にする |
 | todo更新 | 更新ボタン押下時 | todo更新API実行 |
 | todo削除 | 削除ボタン押下時 | todo削除API実行 |
 | todo完了 | チェックボックス入力時 | todo完了API実行 |
 
 ## 入出力一覧
-
+<html>
+    <table align="center">
+        <tbody>
+            <tr>
+                <th rowspan="2">No.</th>
+                <th rowspan="2">入出力名</th>
+                <th rowspan="2">種別</th>
+                <th rowspan="2">I/O</th>
+                <th colspan="5">DBアクセス識別</th>
+                <th colspan="2" rowspan="2">備考</th>
+            </tr>
+            <tr>
+                <th>C</th>
+                <th>R</th>
+                <th>U</th>
+                <th>D</th>
+                <th>ロック対象</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>TODO</td>
+                <td>テーブル</td>
+                <td>I/O</td>
+                <td>◯</td>
+                <td>◯</td>
+                <td>◯</td>
+                <td>◯</td>
+                <td>-</td>
+                <td>-</td>
+            </tr>
+	    </tbody>
+    </table>
+</html>
 
 ## 画面イメージモック
 <html>
