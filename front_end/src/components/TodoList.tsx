@@ -50,8 +50,8 @@ export const TodoList = () => {
 
   const handleRegist = (input: TodoInput) =>
     withErrorHandling(async () => {
-      const created = await registTodo(input)
-      setTodos((prev) => [...prev, created])
+      await registTodo(input)
+      setTodos(await fetchTodos())
     })
 
   const handleUpdate = (id: number, input: TodoInput) =>

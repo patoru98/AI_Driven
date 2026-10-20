@@ -4,11 +4,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.ai_driven.back_end.entity.TodoEntity;
+import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
 import com.ai_driven.back_end.validation.TodoRegistValidator;
 
@@ -32,6 +35,53 @@ class TodoControllerTest {
 
 	@MockitoBean
 	private TodoRegistService todoRegistService;
+
+	@MockitoBean
+	private TodoGetService todoGetService;
+
+	@Test
+	void getAll_returns200WithTodoList() throws Exception {
+		TodoEntity first = entity("買い物へ行く", LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 31), "牛乳を買う");
+		TodoEntity second = entity("書類を提出する", null, null, null);
+		second.setPKey(2);
+		second.setDoneFlag(true);
+		given(todoGetService.getAll()).willReturn(List.of(first, second));
+
+		mockMvc.perform(get("/api/todo/getAll"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.todos[0].p_key").value(1))
+				.andExpect(jsonPath("$.todos[0].done_flag").value(false))
+				.andExpect(jsonPath("$.todos[0].task").value("買い物へ行く"))
+				.andExpect(jsonPath("$.todos[0].registed_date").value("2026/01/05"))
+				.andExpect(jsonPath("$.todos[0].limit_date").value("2026/01/31"))
+				.andExpect(jsonPath("$.todos[1].p_key").value(2))
+				.andExpect(jsonPath("$.todos[1].done_flag").value(true))
+				.andExpect(jsonPath("$.todos[1].task").value("書類を提出する"))
+				.andExpect(jsonPath("$.todos[1].registed_date").doesNotExist())
+				.andExpect(jsonPath("$.todos[1].memo").doesNotExist());
+	}
+
+	@Test
+	void getAll_returns200WithEmptyArrayWhenNoTodosExist() throws Exception {
+		given(todoGetService.getAll()).willReturn(List.of());
+
+		mockMvc.perform(get("/api/todo/getAll"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.todos").isArray())
+				.andExpect(jsonPath("$.todos").isEmpty());
+	}
+
+	@Test
+	void getAll_returns301CodeWhenDatabaseAccessFails() throws Exception {
+		given(todoGetService.getAll()).willThrow(new DataAccessResourceFailureException("DB接続エラー"));
+
+		mockMvc.perform(get("/api/todo/getAll"))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.code").value(301))
+				.andExpect(jsonPath("$.messages[0]").value("TODOの取得に失敗しました。"));
+	}
 
 	@Test
 	void regist_returns200WithRegistedTodo() throws Exception {
@@ -72,12 +122,45 @@ class TodoControllerTest {
 	}
 
 	@Test
+	void regist_returns200WhenOptionalItemsAreNullOrEmpty() throws Exception {
+		given(todoRegistService.regist(any())).willReturn(entity("買い物へ行く", null, null, null));
+
+		mockMvc.perform(post("/api/todo/regist")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "task": "買い物へ行く",
+						  "registed_date": "",
+						  "limit_date": null,
+						  "memo": ""
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.registed_date").doesNotExist())
+				.andExpect(jsonPath("$.limit_date").doesNotExist())
+				.andExpect(jsonPath("$.memo").doesNotExist());
+	}
+
+	@Test
 	void regist_returns300CodeWhenTaskIsMissing() throws Exception {
 		mockMvc.perform(post("/api/todo/regist")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"memo\": \"備考\"}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value(300));
+
+		verify(todoRegistService, never()).regist(any());
+	}
+
+	@Test
+	void regist_returns300CodeWhenTaskIsEmpty() throws Exception {
+		mockMvc.perform(post("/api/todo/regist")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"task\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value(300))
+				.andExpect(jsonPath("$.messages[0]").value("taskは必須です。"));
 
 		verify(todoRegistService, never()).regist(any());
 	}
@@ -147,6 +230,7 @@ class TodoControllerTest {
 		TodoEntity todo = new TodoEntity();
 		todo.setPKey(1);
 		todo.setTask(task);
+		todo.setDoneFlag(false);
 		todo.setRegistedDate(registedDate);
 		todo.setLimitDate(limitDate);
 		todo.setMemo(memo);

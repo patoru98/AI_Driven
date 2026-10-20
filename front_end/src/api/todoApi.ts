@@ -1,6 +1,7 @@
 import type {
   Todo,
   TodoInput,
+  TodoGetResponse,
   TodoRegistRequest,
   TodoRegistResponse,
 } from '../types/todo'
@@ -18,7 +19,7 @@ export class ApiError extends Error {
 
 // ---- TODO登録API (back_end/src/docs/api/TodoRegistAPI.md) ----
 
-export const registTodo = async (input: TodoInput): Promise<Todo> => {
+export const registTodo = async (input: TodoInput): Promise<void> => {
   const body: TodoRegistRequest = {
     task: input.task,
     registed_date: isoToSlash(input.registedDate),
@@ -41,30 +42,19 @@ export const registTodo = async (input: TodoInput): Promise<Todo> => {
   if (!res.ok || json === null || json.code !== 200) {
     throw new ApiError(json?.messages ?? ['TODOの登録に失敗しました'])
   }
-
-  return mockStore.add({
-    task: json.task ?? input.task,
-    registedDate: slashToIso(json.registed_date ?? body.registed_date),
-    limitDate: slashToIso(json.limit_date ?? body.limit_date),
-    memo: json.memo ?? input.memo,
-  })
 }
 
-// ---- 以下、API設計書が未作成のためモック実装 ----
+// ---- 更新・削除・完了APIは未実装のためモック ----
 
 const MOCK_DELAY_MS = 200
 const delay = () => new Promise((r) => setTimeout(r, MOCK_DELAY_MS))
 
 const createMockStore = () => {
-  let seq = 0
   let todos: Todo[] = []
 
   return {
-    all: (): Todo[] => todos.map((t) => ({ ...t })),
-    add: (input: TodoInput): Todo => {
-      const todo: Todo = { id: ++seq, done: false, ...input }
-      todos = [...todos, todo]
-      return { ...todo }
+    replaceAll: (items: Todo[]): void => {
+      todos = items.map((todo) => ({ ...todo }))
     },
     update: (id: number, patch: Partial<Todo>): Todo => {
       const index = todos.findIndex((t) => t.id === id)
@@ -81,10 +71,30 @@ const createMockStore = () => {
 
 const mockStore = createMockStore()
 
-/** TODO取得API (モック) */
+/** TODO取得API */
 export const fetchTodos = async (): Promise<Todo[]> => {
-  await delay()
-  return mockStore.all()
+  let res: Response
+  try {
+    res = await fetch('/api/todo/getAll')
+  } catch {
+    throw new ApiError(['サーバーに接続できませんでした'])
+  }
+
+  const json = (await res.json().catch(() => null)) as TodoGetResponse | null
+  if (!res.ok || json === null || json.code !== 200 || !Array.isArray(json.todos)) {
+    throw new ApiError(json?.messages ?? ['TODOの取得に失敗しました'])
+  }
+
+  const todos = json.todos.map((item) => ({
+    id: item.p_key,
+    done: item.done_flag,
+    task: item.task,
+    registedDate: item.registed_date ? slashToIso(item.registed_date) : '',
+    limitDate: item.limit_date ? slashToIso(item.limit_date) : '',
+    memo: item.memo ?? '',
+  }))
+  mockStore.replaceAll(todos)
+  return todos
 }
 
 /** TODO更新API (モック) */

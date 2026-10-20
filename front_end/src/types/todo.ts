@@ -29,3 +29,18 @@ export type TodoRegistResponse = {
   memo?: string
   messages?: string[]
 }
+
+export type TodoGetItem = {
+  p_key: number
+  done_flag: boolean
+  task: string
+  registed_date?: string
+  limit_date?: string
+  memo?: string
+}
+
+export type TodoGetResponse = {
+  code: number
+  todos?: TodoGetItem[]
+  messages?: string[]
+}

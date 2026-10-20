@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ai_driven.back_end.dto.TodoRegistRequest;
 import com.ai_driven.back_end.dto.TodoRegistResponse;
+import com.ai_driven.back_end.dto.TodoGetResponse;
 import com.ai_driven.back_end.entity.TodoEntity;
+import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
 import com.ai_driven.back_end.validation.TodoRegistValidator;
 
@@ -33,10 +36,26 @@ public class TodoController {
 
 	private final TodoRegistValidator validator;
 	private final TodoRegistService todoRegistService;
+	private final TodoGetService todoGetService;
 
-	public TodoController(TodoRegistValidator validator, TodoRegistService todoRegistService) {
+	public TodoController(TodoRegistValidator validator, TodoRegistService todoRegistService,
+			TodoGetService todoGetService) {
 		this.validator = validator;
 		this.todoRegistService = todoRegistService;
+		this.todoGetService = todoGetService;
+	}
+
+	@GetMapping("/getAll")
+	public ResponseEntity<TodoGetResponse> getAll() {
+		try {
+			List<TodoGetResponse.TodoItem> todos = todoGetService.getAll().stream()
+					.map(this::toTodoItem)
+					.toList();
+			return ResponseEntity.ok(TodoGetResponse.success(todos));
+		} catch (DataAccessException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(TodoGetResponse.error(CODE_DATABASE_ERROR, List.of("TODOの取得に失敗しました。")));
+		}
 	}
 
 	@PostMapping("/regist")
@@ -71,6 +90,16 @@ public class TodoController {
 
 	private String format(LocalDate date) {
 		return date == null ? null : date.format(TodoRegistValidator.DATE_FORMATTER);
+	}
+
+	private TodoGetResponse.TodoItem toTodoItem(TodoEntity todo) {
+		return new TodoGetResponse.TodoItem(
+				todo.getPKey(),
+				todo.getDoneFlag(),
+				todo.getTask(),
+				format(todo.getRegistedDate()),
+				format(todo.getLimitDate()),
+				todo.getMemo());
 	}
 
 }
