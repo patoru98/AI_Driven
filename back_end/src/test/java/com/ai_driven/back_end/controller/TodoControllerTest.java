@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.ai_driven.back_end.entity.TodoEntity;
 import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
+import com.ai_driven.back_end.service.TodoUpdateService;
 import com.ai_driven.back_end.validation.TodoRegistValidator;
 
 @WebMvcTest(TodoController.class)
@@ -38,6 +39,9 @@ class TodoControllerTest {
 
 	@MockitoBean
 	private TodoGetService todoGetService;
+
+	@MockitoBean
+	private TodoUpdateService todoUpdateService;
 
 	@Test
 	void getAll_returns200WithTodoList() throws Exception {
@@ -224,6 +228,68 @@ class TodoControllerTest {
 				.content("not json"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value(300));
+	}
+
+	@Test
+	void update_returns200WithUpdatedTodo() throws Exception {
+		TodoEntity updated = entity("新しいタスク", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28), "更新後の備考");
+		given(todoUpdateService.update(org.mockito.ArgumentMatchers.eq(1), any()))
+				.willReturn(java.util.Optional.of(updated));
+
+		mockMvc.perform(post("/api/todo/update")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+						  "p_key": 1,
+						  "task": "新しいタスク",
+						  "registed_date": "2026/02/01",
+						  "limit_date": "2026/02/28",
+						  "memo": "更新後の備考"
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.p_key").value(1))
+				.andExpect(jsonPath("$.task").value("新しいタスク"))
+				.andExpect(jsonPath("$.registed_date").value("2026/02/01"))
+				.andExpect(jsonPath("$.limit_date").value("2026/02/28"))
+				.andExpect(jsonPath("$.memo").value("更新後の備考"));
+	}
+
+	@Test
+	void update_returns300CodeWhenPrimaryKeyIsInvalid() throws Exception {
+		mockMvc.perform(post("/api/todo/update")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": \"1\", \"task\": \"更新タスク\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value(300))
+				.andExpect(jsonPath("$.messages[0]").value("p_keyは1以上の整数で指定してください。"));
+
+		verify(todoUpdateService, never()).update(org.mockito.ArgumentMatchers.anyInt(), any());
+	}
+
+	@Test
+	void update_returns404WhenTodoDoesNotExist() throws Exception {
+		given(todoUpdateService.update(org.mockito.ArgumentMatchers.eq(99), any()))
+				.willReturn(java.util.Optional.empty());
+
+		mockMvc.perform(post("/api/todo/update")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 99, \"task\": \"更新タスク\"}"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value(302));
+	}
+
+	@Test
+	void update_returns301CodeWhenDatabaseAccessFails() throws Exception {
+		given(todoUpdateService.update(org.mockito.ArgumentMatchers.eq(1), any()))
+				.willThrow(new DataAccessResourceFailureException("DB接続エラー"));
+
+		mockMvc.perform(post("/api/todo/update")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 1, \"task\": \"更新タスク\"}"))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.code").value(301));
 	}
 
 	private TodoEntity entity(String task, LocalDate registedDate, LocalDate limitDate, String memo) {
