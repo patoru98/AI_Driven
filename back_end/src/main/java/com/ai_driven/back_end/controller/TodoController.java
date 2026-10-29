@@ -19,6 +19,7 @@ import com.ai_driven.back_end.dto.TodoRegistRequest;
 import com.ai_driven.back_end.dto.TodoRegistResponse;
 import com.ai_driven.back_end.dto.TodoGetResponse;
 import com.ai_driven.back_end.dto.TodoUpdateResponse;
+import com.ai_driven.back_end.dto.TodoUpdateRequest;
 import com.ai_driven.back_end.entity.TodoEntity;
 import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
@@ -92,7 +93,7 @@ public class TodoController {
 
 	@PostMapping("/update")
 	public ResponseEntity<TodoUpdateResponse> update(@RequestBody JsonNode body) {
-		List<String> messages = validator.validate(body);
+		List<String> messages = validator.validateUpdate(body);
 		Integer pKey = primaryKey(body);
 		if (pKey == null) {
 			messages.add("p_keyは1以上の整数で指定してください。");
@@ -101,7 +102,7 @@ public class TodoController {
 			return ResponseEntity.badRequest().body(TodoUpdateResponse.error(CODE_VALIDATION_ERROR, messages));
 		}
 
-		TodoRegistRequest request = validator.toRequest(body);
+		TodoUpdateRequest request = validator.toUpdateRequest(body);
 		Optional<TodoEntity> result;
 		try {
 			result = todoUpdateService.update(pKey, request);

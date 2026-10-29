@@ -19,7 +19,8 @@
   "task": "買い物へ行く",
   "registed_date": "2026/01/05",
   "limit_date": "2026/01/31",
-  "memo": "牛乳を買う"
+  "memo": "牛乳を買う",
+  "done_flag": false
 }
 ```
 
@@ -30,6 +31,7 @@
 | `registed_date` | String | - | タスク開始日。`YYYY/MM/DD`形式。省略、null、空文字を許容する。 |
 | `limit_date` | String | - | タスク終了日。`YYYY/MM/DD`形式。省略、null、空文字を許容する。 |
 | `memo` | String | - | 備考。500文字以内。省略、null、空文字を許容する。 |
+| `done_flag` | Boolean | - | 完了フラグ。省略またはnullの場合は`false`として更新する。 |
 
 `task`、日付、`memo`の形式・文字数検証はTodo Regist APIと同じ。更新項目に省略、null、空文字が指定された任意項目はnullとして更新する。
 
@@ -56,6 +58,7 @@
 - 対象テーブル：`TODO_TABLE`
 - `P_KEY`がリクエストの`p_key`と一致するレコードを更新する。
 - `TASK`、`REGISTED_DATE`、`LIMIT_DATE`、`MEMO`をリクエストの値に置き換える。
+- `DONE_FLAG`をリクエストの`done_flag`に置き換える。省略またはnullの場合は`false`にする。
 - `UPDATE_DATE`を更新処理実行日のシステム日付にする。
-- `CREATE_DATE`と`DONE_FLAG`は変更しない。
+- `CREATE_DATE`は変更しない。
 - DBアクセスエラー時は更新を中断し、HTTP 500 / code 301を返す。

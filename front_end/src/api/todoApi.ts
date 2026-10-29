@@ -4,6 +4,8 @@ import type {
   TodoGetResponse,
   TodoRegistRequest,
   TodoRegistResponse,
+  TodoUpdateRequest,
+  TodoUpdateResponse,
 } from '../types/todo'
 import { isoToSlash, slashToIso } from '../utils/date'
 
@@ -16,6 +18,22 @@ export class ApiError extends Error {
     this.messages = messages
   }
 }
+
+const toTodoInput = (todo: Partial<Todo>): TodoInput => ({
+  task: todo.task ?? '',
+  registedDate: todo.registedDate ?? '',
+  limitDate: todo.limitDate ?? '',
+  memo: todo.memo ?? '',
+})
+
+const createUpdateRequest = (id: number, input: TodoInput, doneFlag: boolean): TodoUpdateRequest => ({
+  p_key: id,
+  task: input.task,
+  registed_date: isoToSlash(input.registedDate),
+  limit_date: isoToSlash(input.limitDate),
+  memo: input.memo,
+  done_flag: doneFlag,
+})
 
 // ---- TODO登録API (back_end/src/docs/api/TodoRegistAPI.md) ----
 
@@ -56,6 +74,7 @@ const createMockStore = () => {
     replaceAll: (items: Todo[]): void => {
       todos = items.map((todo) => ({ ...todo }))
     },
+    get: (id: number): Todo | undefined => todos.find((t) => t.id === id),
     update: (id: number, patch: Partial<Todo>): Todo => {
       const index = todos.findIndex((t) => t.id === id)
       if (index < 0) throw new ApiError(['対象のTODOが見つかりません'])
@@ -97,10 +116,35 @@ export const fetchTodos = async (): Promise<Todo[]> => {
   return todos
 }
 
-/** TODO更新API (モック) */
+/** TODO更新API */
 export const updateTodo = async (id: number, input: TodoInput): Promise<Todo> => {
-  await delay()
-  return mockStore.update(id, input)
+  const current = mockStore.get(id)
+  const body: TodoUpdateRequest = createUpdateRequest(id, input, current?.done ?? false)
+
+  let res: Response
+  try {
+    res = await fetch('/api/todo/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(['サーバーに接続できませんでした'])
+  }
+
+  const json = (await res.json().catch(() => null)) as TodoUpdateResponse | null
+  if (!res.ok || json === null || json.code !== 200) {
+    throw new ApiError(json?.messages ?? ['TODOの更新に失敗しました'])
+  }
+
+  return {
+    id: json.p_key ?? id,
+    task: json.task ?? input.task,
+    registedDate: json.registed_date ? slashToIso(json.registed_date) : input.registedDate,
+    limitDate: json.limit_date ? slashToIso(json.limit_date) : input.limitDate,
+    memo: json.memo ?? input.memo,
+    done: json.done_flag ?? current?.done ?? false,
+  }
 }
 
 /** TODO削除API (モック) */
@@ -109,8 +153,40 @@ export const deleteTodo = async (id: number): Promise<void> => {
   mockStore.remove(id)
 }
 
-/** TODO完了API (モック) */
+/** TODO完了API */
 export const completeTodo = async (id: number, done: boolean): Promise<Todo> => {
-  await delay()
-  return mockStore.update(id, { done })
+  const current = mockStore.get(id)
+  if (!current) {
+    throw new ApiError(['対象のTODOが見つかりません'])
+  }
+
+  const body = createUpdateRequest(id, toTodoInput(current), done)
+
+  let res: Response
+  try {
+    res = await fetch('/api/todo/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(['サーバーに接続できませんでした'])
+  }
+
+  const json = (await res.json().catch(() => null)) as TodoUpdateResponse | null
+  if (!res.ok || json === null || json.code !== 200) {
+    throw new ApiError(json?.messages ?? ['TODOの完了処理に失敗しました'])
+  }
+
+  const updated: Todo = {
+    id,
+    task: current.task,
+    registedDate: current.registedDate,
+    limitDate: current.limitDate,
+    memo: current.memo,
+    done,
+  }
+
+  mockStore.update(id, { done })
+  return updated
 }

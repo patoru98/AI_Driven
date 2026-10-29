@@ -257,6 +257,18 @@ class TodoControllerTest {
 	}
 
 	@Test
+	void update_returns300CodeWhenDoneFlagIsNotBoolean() throws Exception {
+		mockMvc.perform(post("/api/todo/update")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 1, \"task\": \"更新タスク\", \"done_flag\": \"true\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value(300))
+				.andExpect(jsonPath("$.messages[0]").value("done_flagは真偽値で指定してください。"));
+
+		verify(todoUpdateService, never()).update(org.mockito.ArgumentMatchers.anyInt(), any());
+	}
+
+	@Test
 	void update_returns300CodeWhenPrimaryKeyIsInvalid() throws Exception {
 		mockMvc.perform(post("/api/todo/update")
 				.contentType(MediaType.APPLICATION_JSON)

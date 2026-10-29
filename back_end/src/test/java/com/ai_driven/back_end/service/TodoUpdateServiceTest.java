@@ -10,6 +10,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import com.ai_driven.back_end.dto.TodoRegistRequest;
+import com.ai_driven.back_end.dto.TodoUpdateRequest;
 import com.ai_driven.back_end.entity.TodoEntity;
 import com.ai_driven.back_end.repository.TodoRepository;
 
@@ -35,7 +36,7 @@ class TodoUpdateServiceTest {
 		LocalDate createDate = created.getCreateDate();
 
 		TodoEntity updated = todoUpdateService.update(created.getPKey(),
-				new TodoRegistRequest("更新後のタスク", "2026/02/01", "2026/02/28", "更新後の備考"))
+				new TodoUpdateRequest("更新後のタスク", "2026/02/01", "2026/02/28", "更新後の備考", null))
 				.orElseThrow();
 
 		assertThat(todoRepository.findById(created.getPKey())).hasValueSatisfying(todo -> {
@@ -43,7 +44,7 @@ class TodoUpdateServiceTest {
 			assertThat(todo.getRegistedDate()).isEqualTo(LocalDate.of(2026, 2, 1));
 			assertThat(todo.getLimitDate()).isEqualTo(LocalDate.of(2026, 2, 28));
 			assertThat(todo.getMemo()).isEqualTo("更新後の備考");
-			assertThat(todo.getDoneFlag()).isTrue();
+			assertThat(todo.getDoneFlag()).isFalse();
 			assertThat(todo.getCreateDate()).isEqualTo(createDate);
 			assertThat(todo.getUpdateDate()).isEqualTo(LocalDate.now());
 		});
@@ -52,8 +53,20 @@ class TodoUpdateServiceTest {
 
 	@Test
 	void update_returnsEmptyWhenPrimaryKeyDoesNotExist() {
-		assertThat(todoUpdateService.update(999, new TodoRegistRequest("タスク", null, null, null)))
+		assertThat(todoUpdateService.update(999, new TodoUpdateRequest("タスク", null, null, null, null)))
 				.isEmpty();
+	}
+
+	@Test
+	void update_setsDoneFlagFromRequest() {
+		TodoEntity created = todoRegistService.regist(
+				new TodoRegistRequest("元のタスク", null, null, null));
+
+		todoUpdateService.update(created.getPKey(),
+				new TodoUpdateRequest("更新後のタスク", null, null, null, true)).orElseThrow();
+
+		assertThat(todoRepository.findById(created.getPKey()))
+				.hasValueSatisfying(todo -> assertThat(todo.getDoneFlag()).isTrue());
 	}
 
 }

@@ -56,8 +56,8 @@ export const TodoList = () => {
 
   const handleUpdate = (id: number, input: TodoInput) =>
     withErrorHandling(async () => {
-      const updated = await updateTodo(id, input)
-      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      await updateTodo(id, input)
+      setTodos(await fetchTodos())
     })
 
   const handleDelete = (id: number) =>
