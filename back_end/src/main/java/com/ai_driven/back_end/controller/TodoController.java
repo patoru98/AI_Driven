@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ai_driven.back_end.dto.TodoRegistRequest;
 import com.ai_driven.back_end.dto.TodoRegistResponse;
 import com.ai_driven.back_end.dto.TodoGetResponse;
+import com.ai_driven.back_end.dto.TodoDeleteResponse;
 import com.ai_driven.back_end.dto.TodoUpdateResponse;
 import com.ai_driven.back_end.dto.TodoUpdateRequest;
 import com.ai_driven.back_end.entity.TodoEntity;
+import com.ai_driven.back_end.service.TodoDeleteService;
 import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
 import com.ai_driven.back_end.service.TodoUpdateService;
@@ -38,20 +40,23 @@ public class TodoController {
 	/** DB関連エラーを表す業務コード。 */
 	private static final int CODE_DATABASE_ERROR = 301;
 
-	/** 更新対象のTODOが存在しないことを表す業務コード。 */
+	/** 対象のTODOが存在しないことを表す業務コード。 */
 	private static final int CODE_NOT_FOUND = 302;
 
 	private final TodoRegistValidator validator;
 	private final TodoRegistService todoRegistService;
 	private final TodoGetService todoGetService;
 	private final TodoUpdateService todoUpdateService;
+	private final TodoDeleteService todoDeleteService;
 
 	public TodoController(TodoRegistValidator validator, TodoRegistService todoRegistService,
-			TodoGetService todoGetService, TodoUpdateService todoUpdateService) {
+			TodoGetService todoGetService, TodoUpdateService todoUpdateService,
+			TodoDeleteService todoDeleteService) {
 		this.validator = validator;
 		this.todoRegistService = todoRegistService;
 		this.todoGetService = todoGetService;
 		this.todoUpdateService = todoUpdateService;
+		this.todoDeleteService = todoDeleteService;
 	}
 
 	@GetMapping("/getAll")
@@ -123,6 +128,30 @@ public class TodoController {
 				format(updated.getRegistedDate()),
 				format(updated.getLimitDate()),
 				updated.getMemo()));
+	}
+
+	@PostMapping("/delete")
+	public ResponseEntity<TodoDeleteResponse> delete(@RequestBody JsonNode body) {
+		Integer pKey = primaryKey(body);
+		if (pKey == null) {
+			return ResponseEntity.badRequest().body(TodoDeleteResponse.error(
+					CODE_VALIDATION_ERROR, List.of("p_keyは1以上の整数で指定してください。")));
+		}
+
+		boolean deleted;
+		try {
+			deleted = todoDeleteService.delete(pKey);
+		} catch (DataAccessException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(TodoDeleteResponse.error(CODE_DATABASE_ERROR, List.of("TODOの削除に失敗しました。")));
+		}
+
+		if (!deleted) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(TodoDeleteResponse.error(CODE_NOT_FOUND, List.of("削除対象のTODOが見つかりません。")));
+		}
+
+		return ResponseEntity.ok(TodoDeleteResponse.success());
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)

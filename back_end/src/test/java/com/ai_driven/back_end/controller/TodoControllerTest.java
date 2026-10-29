@@ -22,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.ai_driven.back_end.entity.TodoEntity;
+import com.ai_driven.back_end.service.TodoDeleteService;
 import com.ai_driven.back_end.service.TodoGetService;
 import com.ai_driven.back_end.service.TodoRegistService;
 import com.ai_driven.back_end.service.TodoUpdateService;
@@ -42,6 +43,9 @@ class TodoControllerTest {
 
 	@MockitoBean
 	private TodoUpdateService todoUpdateService;
+
+	@MockitoBean
+	private TodoDeleteService todoDeleteService;
 
 	@Test
 	void getAll_returns200WithTodoList() throws Exception {
@@ -300,6 +304,55 @@ class TodoControllerTest {
 		mockMvc.perform(post("/api/todo/update")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"p_key\": 1, \"task\": \"更新タスク\"}"))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.code").value(301));
+	}
+
+	@Test
+	void delete_returns200WhenTodoIsDeleted() throws Exception {
+		given(todoDeleteService.delete(1)).willReturn(true);
+
+		mockMvc.perform(post("/api/todo/delete")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 1}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.messages").doesNotExist());
+
+		verify(todoDeleteService).delete(1);
+	}
+
+	@Test
+	void delete_returns300CodeWhenPrimaryKeyIsInvalid() throws Exception {
+		mockMvc.perform(post("/api/todo/delete")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": \"1\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value(300))
+				.andExpect(jsonPath("$.messages[0]").value("p_keyは1以上の整数で指定してください。"));
+
+		verify(todoDeleteService, never()).delete(org.mockito.ArgumentMatchers.anyInt());
+	}
+
+	@Test
+	void delete_returns404WhenTodoDoesNotExist() throws Exception {
+		given(todoDeleteService.delete(99)).willReturn(false);
+
+		mockMvc.perform(post("/api/todo/delete")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 99}"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value(302));
+	}
+
+	@Test
+	void delete_returns301CodeWhenDatabaseAccessFails() throws Exception {
+		given(todoDeleteService.delete(1))
+				.willThrow(new DataAccessResourceFailureException("DB接続エラー"));
+
+		mockMvc.perform(post("/api/todo/delete")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"p_key\": 1}"))
 				.andExpect(status().isInternalServerError())
 				.andExpect(jsonPath("$.code").value(301));
 	}
