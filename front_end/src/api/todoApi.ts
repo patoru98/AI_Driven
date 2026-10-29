@@ -4,6 +4,8 @@ import type {
   TodoGetResponse,
   TodoRegistRequest,
   TodoRegistResponse,
+  TodoDeleteRequest,
+  TodoDeleteResponse,
   TodoUpdateRequest,
   TodoUpdateResponse,
 } from '../types/todo'
@@ -61,11 +63,6 @@ export const registTodo = async (input: TodoInput): Promise<void> => {
     throw new ApiError(json?.messages ?? ['TODOの登録に失敗しました'])
   }
 }
-
-// ---- 更新・削除・完了APIは未実装のためモック ----
-
-const MOCK_DELAY_MS = 200
-const delay = () => new Promise((r) => setTimeout(r, MOCK_DELAY_MS))
 
 const createMockStore = () => {
   let todos: Todo[] = []
@@ -147,9 +144,26 @@ export const updateTodo = async (id: number, input: TodoInput): Promise<Todo> =>
   }
 }
 
-/** TODO削除API (モック) */
+/** TODO削除API */
 export const deleteTodo = async (id: number): Promise<void> => {
-  await delay()
+  const body: TodoDeleteRequest = { p_key: id }
+
+  let res: Response
+  try {
+    res = await fetch('/api/todo/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(['サーバーに接続できませんでした'])
+  }
+
+  const json = (await res.json().catch(() => null)) as TodoDeleteResponse | null
+  if (!res.ok || json === null || json.code !== 200) {
+    throw new ApiError(json?.messages ?? ['TODOの削除に失敗しました'])
+  }
+
   mockStore.remove(id)
 }
 

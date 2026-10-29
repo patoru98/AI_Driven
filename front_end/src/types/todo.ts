@@ -50,6 +50,15 @@ export type TodoUpdateResponse = {
   messages?: string[]
 }
 
+export type TodoDeleteRequest = {
+  p_key: number
+}
+
+export type TodoDeleteResponse = {
+  code: number
+  messages?: string[]
+}
+
 export type TodoGetItem = {
   p_key: number
   done_flag: boolean
