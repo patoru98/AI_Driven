@@ -40,3 +40,38 @@ h2 {
   font-weight: 500;
   color: var(--text-h);
 }
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.todo-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.todo-list th,
+.todo-list td {
+  padding: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.todo-list input[type='text'],
+.todo-list textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.todo-row.done input[type='text'] {
+  text-decoration: line-through;
+}
+
+.todo-errors {
+  color: #c0392b;
+  padding-left: 1.2rem;
+}

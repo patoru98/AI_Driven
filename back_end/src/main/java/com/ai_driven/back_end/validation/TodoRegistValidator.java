@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.ai_driven.back_end.dto.TodoRegistRequest;
+import com.ai_driven.back_end.dto.TodoUpdateRequest;
 
 import tools.jackson.databind.JsonNode;
 
@@ -36,12 +37,31 @@ public class TodoRegistValidator {
 		return messages;
 	}
 
+	public List<String> validateUpdate(JsonNode body) {
+		List<String> messages = validate(body);
+		JsonNode doneFlag = body == null ? null : body.get("done_flag");
+		if (doneFlag != null && !doneFlag.isNull() && !doneFlag.isBoolean()) {
+			messages.add("done_flagは真偽値で指定してください。");
+		}
+		return messages;
+	}
+
 	public TodoRegistRequest toRequest(JsonNode body) {
 		return new TodoRegistRequest(
 				text(body, "task"),
 				text(body, "registed_date"),
 				text(body, "limit_date"),
 				text(body, "memo"));
+	}
+
+	public TodoUpdateRequest toUpdateRequest(JsonNode body) {
+		JsonNode doneFlag = body == null ? null : body.get("done_flag");
+		return new TodoUpdateRequest(
+				text(body, "task"),
+				text(body, "registed_date"),
+				text(body, "limit_date"),
+				text(body, "memo"),
+				doneFlag == null || doneFlag.isNull() ? null : doneFlag.booleanValue());
 	}
 
 	private void validateString(JsonNode body, String key, int maxLength, boolean required, List<String> messages) {

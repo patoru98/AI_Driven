@@ -35,6 +35,7 @@ class TodoRegistServiceTest {
 			assertThat(todo.getRegistedDate()).isEqualTo(LocalDate.of(2026, 1, 5));
 			assertThat(todo.getLimitDate()).isEqualTo(LocalDate.of(2026, 1, 31));
 			assertThat(todo.getMemo()).isEqualTo("牛乳を買う");
+			assertThat(todo.getDoneFlag()).isFalse();
 			assertThat(todo.getCreateDate()).isEqualTo(LocalDate.now());
 			assertThat(todo.getUpdateDate()).isEqualTo(LocalDate.now());
 		});

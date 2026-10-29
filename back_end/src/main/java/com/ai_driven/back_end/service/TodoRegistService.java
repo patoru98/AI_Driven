@@ -26,6 +26,7 @@ public class TodoRegistService {
 		entity.setRegistedDate(parse(request.registedDate()));
 		entity.setLimitDate(parse(request.limitDate()));
 		entity.setMemo(request.memo());
+		entity.setDoneFlag(false);
 		entity.setCreateDate(today);
 		entity.setUpdateDate(today);
 
